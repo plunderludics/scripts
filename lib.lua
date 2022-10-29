@@ -14,4 +14,12 @@ function lib.last(arr)
     return arr[#arr]
 end
 
+function lib.get_keys(t)
+   local keys={}
+   for key,_ in pairs(t) do
+     table.insert(keys, key)
+   end
+   return keys
+end
+ 
 return lib
