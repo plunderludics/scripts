@@ -2,8 +2,8 @@ lib = require("./lib")
 local newdecoder = require 'decoder'
 local decode = newdecoder()
 
-USE_SERVER = true
-USE_SERVER_INPUT = true
+USE_SERVER = false
+USE_SERVER_INPUT = false
 server_lastInput = {}
 server_input = {}
 frameTimer = 0
@@ -19,43 +19,38 @@ function main()
 	-- games["zelda"] = "zelda.nes"
 	currentGame = "mario"
 
-	ruppees = 0x8110C78A
-
 	domainToCheck = "RDRAM"
-	levelByte = 0x33B249
-	-- levelByte = 0x33B218
-	base = 256
 
 	MARIO_LEVEL_CASTLE_LOBBY = 6
-
-	marioCoins = 0
-	marioPosZ = -1
 
 	MEM = {
 		mario = {
 			coins = {byte = 0x33B219, size = 2},
-			posX = {byte = 0x33B1AC, size = 4, kind="FLOAT"},
-			posY = {byte = 0x33B1B0, size = 4, kind="FLOAT"},
-			posZ = {byte = 0x33B1B4, size = 4, kind="FLOAT"},
+			stars = {byte = 0x33B21A, size = 2}, -- writing doesn't do anything
 
+			level = {byte = 0x33B249, size = 1}, -- writing doesn't do anything
+			status = {byte = 0x33B172, size = 2},
+			action = {byte = 0x33B17C, size = 4},
+			health = {byte = 0x33B21E, size = 1},
+
+			-- Y is the up axis
 			posX = {byte = 0x33B1AC, size = 4, kind="FLOAT"},
 			posY = {byte = 0x33B1B0, size = 4, kind="FLOAT"},
 			posZ = {byte = 0x33B1B4, size = 4, kind="FLOAT"},
 
 			offY = {byte = 0x33B220, size = 4, kind="FLOAT"},
 
-			level = {byte = 0x33B249, size = 1},
-			status = {byte = 0x33B172, size = 2},
-			action = {byte = 0x33B17C, size = 4},
-			health = {byte = 0x33B21E, size = 1},
-
 			vel = {byte = 0x33B1C4, size=4, kind="FLOAT"},
 			velX = {byte = 0x33B1B8, size=4, kind="FLOAT"},
 			velY = {byte = 0x33B1BC, size=4, kind="FLOAT"},
 			velZ = {byte = 0x33B1C0, size=4, kind="FLOAT"},
 
-			phase = {byte = 0x33B17C, size = 4},
-			cycle = {byte = 0x33B18A, size = 2},
+			camX = {byte = 0x33C6A4, size=4, kind="FLOAT"},
+			camY = {byte = 0x33C6A8, size=4, kind="FLOAT"},
+			camZ = {byte = 0x33C6AC, size=4, kind="FLOAT"},
+
+			phase = {byte = 0x33B17C, size = 4}, -- writing doesn't do anything
+			cycle = {byte = 0x33B18A, size = 2}, -- writing doesn't do anything
 		},
 		zelda = {
 			rupees = {byte = 0x10C78A, size = 1},
@@ -65,10 +60,12 @@ function main()
 		},
 	}
 
-	local g = comm.httpGetGetUrl()
-	local name = lib.last(lib.split(g, "/"))
-	currentGame = name -- TODO: maybe add info to game's name
-	setGame(currentGame)
+	if USE_SERVER then
+		--local g = comm.httpGetGetUrl()
+		--local name = lib.last(lib.split(g, "/"))
+		--currentGame = name -- TODO: maybe add info to game's name
+		--setGame(currentGame)
+	end
 
 	while true do
 		getServerInput(name)
@@ -83,12 +80,15 @@ function main()
 
 
 		local mem = MEM[currentGame]
-		local dbg = "debug"
+		local dbg = ""
 		if mem == nil then
 			print("no memory map for "..currentGame)
 			break
 		else
-			for key, address in pairs(mem) do
+			keys = lib.get_keys(mem)
+			table.sort(keys)
+			for i, key in ipairs(keys) do
+				address = mem[key]
 				local value = getValue(address)
 				local msg = currentGame.."/"..key..":"..value
 				if mem[key]["curr"] ~= value then
@@ -100,7 +100,7 @@ function main()
 		end
 
 		gui.clearGraphics()
-		gui.drawString(10, 10, dbg)
+		gui.text(10, 10, dbg)
 
 		if currentGame == "mario" then
 			local joypad = joypad.get(1)
@@ -196,6 +196,23 @@ function getValue(address, base)
 	end
 
 	return acc
+end
+
+function setValue(address, value, base)
+	local byte = address["byte"]
+	local size = address["size"]
+	local kind = address["kind"] or "INT"
+	local base = base or 256
+
+	if kind == "FLOAT" then
+		memory.writefloat(byte, value, true, domainToCheck)
+	else
+		-- write biggest byte last
+		for i = 1, size do
+			byte_value = math.floor(value/(base^i))%base;
+			memory.writebyte(byte, byte_value, domainToCheck)
+		end
+	end
 end
 
 function memoryForConsole(whichConsole)
