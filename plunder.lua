@@ -2,25 +2,28 @@ lib = require("./lib")
 local newdecoder = require 'decoder'
 local decode = newdecoder()
 
-USE_SERVER = false
-USE_SERVER_INPUT = false
+USE_SERVER = true
+USE_SERVER_INPUT = true
+ROM_PATH = "..\\roms\\"
+ROMS = {
+	-- path to roms
+	zelda = ROM_PATH.."zelda.n64",
+	mario = ROM_PATH.."mario.n64",
+	-- mario = "mario.nes",
+	-- zelda = "zelda.nes",
+}
+
 server_lastInput = {}
 server_input = {}
 frameTimer = 0
 
-ROM_PATH = "..\\roms\\"
 
 function main()
+	print("starting lua stuff")
 	-- loop forever waiting for clients
-	games = {}
-	games["mario"] = "mario.n64"
-	games["zelda"] = "zelda.n64"
-	-- games["mario"] = "mario.nes"
-	-- games["zelda"] = "zelda.nes"
-	currentGame = "mario"
-
+	currentGame = "none"
+	print("rom: ", gameinfo.getromname())
 	domainToCheck = "RDRAM"
-
 	MARIO_LEVEL_CASTLE_LOBBY = 6
 
 	MEM = {
@@ -60,24 +63,53 @@ function main()
 		},
 	}
 
-	if USE_SERVER then
-		--local g = comm.httpGetGetUrl()
-		--local name = lib.last(lib.split(g, "/"))
-		--currentGame = name -- TODO: maybe add info to game's name
-		--setGame(currentGame)
+	-- https://github.com/TASEmulators/BizHawk/issues/1141#issuecomment-410577001
+	started = false
+	-- if (userdata.containskey("init")) then
+	-- 	started = userdata.get("init")
+	-- 	console.log("userdata retrieved")
+	-- else
+	-- 	userdata.set("init", false)
+	-- 	started = userdata.get("init")
+	-- 	console.log("userdata not set")
+	-- end
+	-- if started then
+	-- 	Stringstarted = "true";
+	-- else
+	-- 	Stringstarted = "false";
+	-- end
+	-- console.log("Started?: " .. Stringstarted)
+
+	if (started == false) then
+		--if lua is loaded, dont rerun lua init
+					--do things here that only need to be run once
+		userdata.set("init", true) --init has been run once
+		if USE_SERVER then
+			local g = comm.httpGetGetUrl()
+			local name = lib.last(lib.split(g, "/"))
+			-- currentGame = name -- TODO: maybe add info to game's name
+			print("systemid: "..emu.getsystemid())
+			setGame(name)
+		end
 	end
 
-	while true do
-		getServerInput(name)
+	-- function cleanup()
+	-- 	userdata.set("init", false)
+	-- end
 
-		emu.frameadvance();
+	-- event.onexit(cleanup)
+
+	while true do
+		getServerInput(currentGame)
+
+		emu.frameadvance()
+
 		if frameTimer >= 0 then
 			frameTimer = frameTimer + 1
 		end
 		if frameTimer > 60 then
 			frameTimer = 0
 		end
-
 
 		local mem = MEM[currentGame]
 		local dbg = ""
@@ -125,11 +157,18 @@ function main()
 end
 
 function setGame(gameName)
-	currentGame = gameName
-	rom = games[currentGame]
-	client.openrom(ROM_PATH .. rom)
-	savestate.loadslot(1)
+	if currentGame ~= gameName then
+		currentGame = gameName
+		rom = ROMS[currentGame]
+
+		print("loading game: "..gameName.." from "..rom)
+		client.openrom(rom)
+	end
+
+	-- savestate.loadslot(1)
+	-- print("loaded slot 1")
 	-- domainToCheck = memoryForConsole(emu.getsystemid())
+	print("loaded!")
 end
 
 function sendServerMessage(msg)
@@ -140,7 +179,7 @@ end
 function getServerInput(name)
 	if not USE_SERVER then return end
 	if not USE_SERVER_INPUT then return end
-	resp = comm.httpGet("http://localhost:9876/index")
+	resp = comm.httpGet(comm.httpGetGetUrl())
 	if resp == nil then return end
 
 	server_input = decode(resp)[name]
@@ -255,4 +294,11 @@ function memoryForConsole(whichConsole)
 	return memory.getcurrentmemorydomain()
 end
 
+rom_path = "D:\\roms\\SNES\\Super Mario World (U) [!].smc";
+if userdata.get("last_openrom_path") == rom_path then
+	userdata.remove("last_openrom_path");
+else
+	userdata.set("last_openrom_path", rom_path);
+	client.openrom(rom_path);
+end
 main()
