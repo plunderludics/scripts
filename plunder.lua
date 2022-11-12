@@ -16,6 +16,7 @@ ROMS = {
 server_lastInput = {}
 server_input = {}
 frameTimer = 0
+showScreen = true
 
 
 function main()
@@ -58,7 +59,7 @@ function main()
 		zelda = {
 			rupees = {byte = 0x10C78A, size = 1},
 
-			velY = {byte = 0x576958 , size=4, kind="FLOAT"},
+			velY = {byte = 0x3FFE18	 , size=4, kind="FLOAT"},
 			vel = {byte = 0x31D960 , size=4, kind="FLOAT"},
 		},
 	}
@@ -131,8 +132,10 @@ function main()
 			end
 		end
 
-		gui.clearGraphics()
-		gui.text(10, 10, dbg)
+		if showScreen then
+			gui.clearGraphics()
+			gui.text(10, 10, dbg)
+		end
 
 		if currentGame == "mario" then
 			local joypad = joypad.get(1)
