@@ -23,7 +23,7 @@ def handler(addr, args):
     # client.send_message("/filter", random.random())
     if addr == "/zelda/velY":
         client.send_message("/emu/mario/a", args > 0)
-        client_unity.send_message("/show", 1 if args > 0 else 0)
+        client_unity.send_message("/solo", 1 if args > 0 else 0)
     print(addr, args)
 
 dispatcher = dispatcher.Dispatcher()
@@ -34,4 +34,3 @@ server = osc_server.ThreadingOSCUDPServer(
 
 print("Serving on {}".format(server.server_address))
 server.serve_forever()
-oscServer_thread = threading.Thread(target=server.serve_forever)
