@@ -1,6 +1,27 @@
 local lib = require("./lib")
 local plunder = {}
 
+local json = require "json"
+
+local newdecoder = require 'decoder'
+local decodeJson = newdecoder()
+
+USE_SERVER = true
+USE_SERVER_INPUT = true
+LOG = true
+ROM_PATH = "..\\roms\\"
+ROMS = {
+	-- path to roms
+	zelda = ROM_PATH.."zelda.n64",
+	mario = ROM_PATH.."mario.n64",
+	tonyhawk = ROM_PATH.."thps2.n64",
+}
+
+function log(str)
+	if not LOG then return end
+	print(str)
+end
+
 -- TODO: integrate with script hawk
 plunder.MEM = {
 	mario = {
@@ -45,6 +66,7 @@ plunder.MEM = {
 function plunder.setGame(gameName)
 	if currentGame ~= gameName then
 		currentGame = gameName
+		print(currentGame)
 		rom = ROMS[currentGame]
 
 		print("loading game: "..gameName.." from "..rom)
@@ -62,6 +84,17 @@ function plunder.sendServerMessage(msg)
 	comm.socketServerSend(msg)
 end
 
+function plunder.sendServerState(game, instance, state)
+	if not USE_SERVER then return end
+	local fill = ""
+	for i = 1,1000,1 do
+		fill = fill.." "
+	end
+	local s = json.encode(state)..fill
+	local ext = instance > 0 and "-"..instance or ""
+	-- print("writing to "..windowName..ext.."_state :"..s)
+	comm.mmfWrite(windowName..ext.."_state", s)
+end
 
 function plunder.readMemory(game)
 	local newMem = {}
@@ -84,30 +117,45 @@ end
 
 serverInputLast = {}
 serverInput = {}
+MAX_ATTEMPTS = 1000
 function plunder.getServerInput(windowName, instance)
+	local ext = instance > 0 and "-"..instance or ""
 	if not USE_SERVER then return end
 	if not USE_SERVER_INPUT then return end
-	resp = comm.httpGet(comm.httpGetGetUrl())
-	if resp == nil then return end
+	resp = comm.mmfRead(windowName..ext.."_in", 1000)
+	local i = 0
+	while resp == nil or resp == "" and i < MAX_ATTEMPTS do
+		resp = comm.mmfRead(windowName..ext.."_in", 1000)
+		i = i + 1
+	end
 
-	serverInput = decodeJson(resp)[windowName]
-	print(comm.mmfRead(windowName.."-"..instance.."_in", 1000))
+	if i == MAX_ATTEMPTS then
+		print("error: TOO MANY ATTEMPTS TO READ")
+		return
+	end
+
+	serverInput = json.decode(resp)
 	if serverInput ~= nil then
 
 		local x = serverInput["x"]
 		local y = serverInput["y"]
+		if y then
+			-- print("y  :"..y.."="..tostring(y * 127/5).."\n")
+		end
+
 		joypad.setanalog({
-			['X Axis'] = x and tostring(x * 127/5) or '',
-			['Y Axis'] = y and tostring(y * 127/5) or '',
+			['X Axis'] = x and tostring(math.floor(x * 127/5)) or '',
+			['Y Axis'] = y and tostring(math.floor(y * 127/5)) or '',
 		}, 1)
 
 		local a = serverInput["a"] or 0
 		local b = serverInput["b"] or 0
 		local z = serverInput["z"] or 0
+
 		joypad.set({
-			['A'] = a ~= 0,
-			['B'] = b ~= 0,
-			['Z'] = z ~= 0,
+			['A'] = a > 0,
+			['B'] = b > 0,
+			['Z'] = z > 0,
 		}, 1)
 
 		local slot = math.floor(serverInput["save"] or 0)
