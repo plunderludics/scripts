@@ -67,6 +67,9 @@ function plunder.setGame(gameName)
 	if currentGame ~= gameName then
 		currentGame = gameName
 		print(currentGame)
+		if ROMS[currentGame] == nil then
+			ROMS[currentGame] = ROM_PATH..gameName..".z64"
+		end
 		rom = ROMS[currentGame]
 
 		print("loading game: "..gameName.." from "..rom)
@@ -102,6 +105,7 @@ function plunder.readMemory(game)
 	local addresses = plunder.MEM[game]
 	if addresses == nil then
 		print("no memory map for "..game)
+		plunder.MEM[game] = {}
 	else
 		keys = lib.get_keys(addresses)
 		table.sort(keys)

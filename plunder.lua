@@ -3,13 +3,6 @@ local plunder = require("./plunderlib")
 
 USE_SERVER = true
 USE_SERVER_INPUT = true
-ROM_PATH = "..\\roms\\"
-ROMS = {
-	-- path to roms
-	zelda = ROM_PATH.."zelda.n64",
-	mario = ROM_PATH.."mario.n64",
-	tonyhawk = ROM_PATH.."thps2.n64",
-}
 
 frameTimer = 0
 SHOW_DEBUG = true

@@ -1,1 +1,1 @@
-echo %1 > %PLUNDER_HOME%\BizHawk-2.8-win-x64\dll\custombuild.txt && %PLUNDER_HOME%\BizHawk-2.8-win-x64\EmuHawk.exe --url_get=http://127.0.0.1:9876/%1 %PLUNDER_HOME%\roms\mario.n64 --lua="%PLUNDER_HOME%\scripts\plunder.lua"
+echo %1 > %PLUNDER_HOME%\BizHawk\dll\custombuild.txt && %PLUNDER_HOME%\BizHawk-2.8-win-x64\EmuHawk.exe --url_get=http://127.0.0.1:9876/%1 %PLUNDER_HOME%\roms\mario.n64 --lua="%PLUNDER_HOME%\scripts\plunder.lua"
