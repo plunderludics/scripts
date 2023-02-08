@@ -1,2 +1,1 @@
-taskkill /FI "WINDOWTITLE eq BizHawk*"
-
+powershell -command "Get-Process | Where-Object {$_.MainWindowTitle -Like '*BizHawk*'} | stop-process"
