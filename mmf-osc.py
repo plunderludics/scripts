@@ -31,12 +31,12 @@ n = len(sys.argv)
 
 emulator_input = {}
 
-game_states = {}
+window_sates = {}
 
 games_mmf  = {}
 
 # get arguments passed in command line
-gamelist = ["mario", "zelda", "mario-2"]
+window_names = ["track1", "track2", "track3", "track4"]
 
 print("Creating OSC server")
 def emu_handler(address, *args):
@@ -44,7 +44,7 @@ def emu_handler(address, *args):
     game = sub[2]
     state = sub[3]
     value = args[0]
-    #print("OSC received: ", address, "setting ", game, "-", state, "to ", value)
+    print("OSC received: ", address, " | setting ", game, "-", state, "to ", value)
     emulator_input[game][state] = value
 
 dispatcher = Dispatcher()
@@ -61,37 +61,37 @@ for i in range(0, OSC_PORTS):
 
 def main():
     # get messages
-    for game_name in game_states:
-        game = game_states[game_name]
-        for msg in game:
-            addr = "/"+game_name+"/"+msg
-            value = game[msg]
+    for window_name in window_sates:
+        window = window_sates[window_name]
+        for msg in window:
+            addr = "/"+window_name+"/"+msg
+            value = window[msg]
             for osc in osc_clients:
                 osc.send_message(addr, value)
 
-# get gamelist from command line
+# get windowNameList from command line
 for i in range(1, len(sys.argv)):
     arg = sys.argv[i]
     print("arg " + arg)
-    gamelist.append(arg)
+    window_names.append(arg)
 
-for game in gamelist:
-    game_states[game] = {}
-    games_mmf[game] = mmap.mmap(-1, MMF_SIZE, game + "_in")
-    emulator_input[game] = {}
+for window_name in window_names:
+    window_sates[window_name] = {}
+    games_mmf[window_name] = mmap.mmap(-1, MMF_SIZE, window_name + "_in")
+    emulator_input[window_name] = {}
 
 c = 0
 while True:
     # read game state from file
-    for game in game_states:
-        with mmap.mmap(-1, MMF_SIZE, game+"_state", mmap.ACCESS_READ) as mm:
+    for window_name in window_sates:
+        with mmap.mmap(-1, MMF_SIZE, window_name+"_state", mmap.ACCESS_READ) as mm:
             try:
                 b = mm.read(MMF_SIZE)
                 s = b.decode("utf-8").replace("\x00", "").strip()
                 if len(s) == 0:
                     continue
                 state = json.loads(s)
-                game_states[game] = state
+                window_sates[window_name] = state
             except:
                 print("something went wrong...")
 
@@ -99,10 +99,10 @@ while True:
 
 
     # write emulator input to file
-    for game in emulator_input:
+    for window_name in emulator_input:
             # write emulator input to file
-            mm = games_mmf[game]
-            i = json.dumps(emulator_input[game])
+            mm = games_mmf[window_name]
+            i = json.dumps(emulator_input[window_name])
             b = bytes(i, "utf-8")
 
             mm.seek(0)

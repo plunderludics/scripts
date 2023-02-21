@@ -6,16 +6,21 @@ local json = require "json"
 local newdecoder = require 'decoder'
 local decodeJson = newdecoder()
 
-USE_SERVER = true
-USE_SERVER_INPUT = true
+plunder.USE_SERVER = false
+plunder.USE_SERVER_INPUT = false
 LOG = true
+SAMPLE_PATH = "..\\samples\\"
+ROM_PATH_FILENAME = "rompath.txt"
+SAVE_FILENAME = "save.State"
 ROM_PATH = "..\\roms\\"
 ROMS = {
 	-- path to roms
-	zelda = ROM_PATH.."zelda.n64",
+	zelda = ROM_PATH.."zelda-mm.n64",
 	mario = ROM_PATH.."mario.n64",
 	tonyhawk = ROM_PATH.."thps2.n64",
 }
+FILE_SAVE_SLOT = 10
+
 
 function log(str)
 	if not LOG then return end
@@ -63,6 +68,32 @@ plunder.MEM = {
 				ingame = {byte = 0x101E24, size=4}, -- =48 in menu, 420 in game
     }
 }
+
+function plunder.runSample(sampleName)
+	print ("[sample] loading: ".. sampleName)
+	-- TODO: don't reopen running rom
+	-- a sample folder contains a .txt file called rompath.txt which contents are the rom path
+	local folderPath = SAMPLE_PATH..sampleName.."\\"
+	local rompathfile = folderPath..ROM_PATH_FILENAME
+	local savepathfile = folderPath..SAVE_FILENAME
+  if not lib.file_exists(rompathfile) then
+		print("ERROR: rompath file does not exist. "..rompathfile)
+		return
+	end
+  local lines = {}
+  local rompath = lib.lines_from(rompathfile)[1]
+	print ("[sample] rom path: ".. rompath)
+
+	client.openrom(rompath)
+
+  if lib.file_exists(savepathfile) then
+		-- savestate.load(savepathfile)
+		-- savestate.save(FILE_SAVE_SLOT)
+	else
+		print("WARNING: savepath file does not exist. "..savepathfile)
+	end
+end
+
 function plunder.setGame(gameName)
 	if currentGame ~= gameName then
 		currentGame = gameName
@@ -83,12 +114,13 @@ function plunder.setGame(gameName)
 end
 
 function plunder.sendServerMessage(msg)
-	if not USE_SERVER then return end
+	if not plunder.USE_SERVER then return end
 	comm.socketServerSend(msg)
 end
 
 function plunder.sendServerState(game, instance, state)
-	if not USE_SERVER then return end
+	if not plunder.USE_SERVER then return end
+	instance = instance or 0
 	local fill = ""
 	for i = 1,1000,1 do
 		fill = fill.." "
@@ -123,9 +155,10 @@ serverInputLast = {}
 serverInput = {}
 MAX_ATTEMPTS = 1000
 function plunder.getServerInput(windowName, instance)
+	instance = instance or 0
 	local ext = instance > 0 and "-"..instance or ""
-	if not USE_SERVER then return end
-	if not USE_SERVER_INPUT then return end
+	if not plunder.USE_SERVER then return end
+	if not plunder.USE_SERVER_INPUT then return end
 	resp = comm.mmfRead(windowName..ext.."_in", 1000)
 	local i = 0
 	while resp == nil or resp == "" and i < MAX_ATTEMPTS do
@@ -170,6 +203,11 @@ function plunder.getServerInput(windowName, instance)
 		slot = math.floor(serverInput["load"] or 0)
 		if slot > 0 and slot ~= math.floor(serverInputLast["load"] or 0) then
 			savestate.loadslot(slot)
+		end
+
+		local sample = serverInput["sample"] or false
+		if serverInputLast["sample"] ~= sample and sample then
+			plunder.runSample(sample)
 		end
 
 		serverInputLast = serverInput

@@ -1,8 +1,8 @@
 local lib = require("./lib")
 local plunder = require("./plunderlib")
 
-USE_SERVER = true
-USE_SERVER_INPUT = true
+plunder.USE_SERVER = false
+plunder.USE_SERVER_INPUT = false
 
 frameTimer = 0
 SHOW_DEBUG = true
@@ -33,18 +33,17 @@ function main()
 					--do things here that only need to be run once
 		userdata.set("init", true) --init has been run once
 		print(comm.httpGetGetUrl())
-		if USE_SERVER then
-			local g = comm.httpGetGetUrl()
-			local query = lib.last(lib.split(g, "/"))
-			local split = lib.split(query, "-")
-			local game = split[1]
-			windowName = split[2] or game
-			if #split > 1 then instance = tonumber(split[2]) end
-			-- currentGame = name -- TODO: maybe add info to game's name
-			print("systemid: "..emu.getsystemid())
-			print("windowName: "..windowName)
-			plunder.setGame(game)
-		end
+		local g = comm.httpGetGetUrl()
+		local query = lib.last(lib.split(g, "/"))
+		local split = lib.split(query, "_")
+		local sample = split[1]
+		windowName = split[2] or game
+		if #split > 1 then instance = tonumber(split[2]) end
+		-- currentGame = name -- TODO: maybe add info to game's name
+		print("systemid: "..emu.getsystemid())
+		print("sample: "..sample)
+		print("windowName: "..windowName)
+		plunder.runSample(sample)
 	end
 
 	while true do
