@@ -87,8 +87,8 @@ function plunder.runSample(sampleName)
 	client.openrom(rompath)
 
   if lib.file_exists(savepathfile) then
-		-- savestate.load(savepathfile)
-		-- savestate.save(FILE_SAVE_SLOT)
+		savestate.load(savepathfile)
+		savestate.save(FILE_SAVE_SLOT)
 	else
 		print("WARNING: savepath file does not exist. "..savepathfile)
 	end
