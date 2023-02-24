@@ -1,8 +1,8 @@
 local lib = require("./lib")
 local plunder = require("./plunderlib")
 
-plunder.USE_SERVER = false
-plunder.USE_SERVER_INPUT = false
+plunder.USE_SERVER = true
+plunder.USE_SERVER_INPUT = true
 
 frameTimer = 0
 SHOW_DEBUG = true

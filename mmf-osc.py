@@ -15,10 +15,9 @@ OSC_SERVER_PORT = 4199
 OSC_INITIAL_PORT = 4200
 OSC_PORTS = 4
 OSC_IPS = [
-    "192.168.1.168",
-    "192.168.1.166",
+    "127.0.0.1"
 ]
-LOCAL_IP = "192.168.1.166"
+LOCAL_IP = "127.0.0.1"
 
 osc_input = {
     "test": "10"
@@ -31,12 +30,12 @@ n = len(sys.argv)
 
 emulator_input = {}
 
-window_sates = {}
+window_states = {}
 
 games_mmf  = {}
 
 # get arguments passed in command line
-window_names = ["track1", "track2", "track3", "track4"]
+window_names = []
 
 print("Creating OSC server")
 def emu_handler(address, *args):
@@ -61,8 +60,8 @@ for i in range(0, OSC_PORTS):
 
 def main():
     # get messages
-    for window_name in window_sates:
-        window = window_sates[window_name]
+    for window_name in window_states:
+        window = window_states[window_name]
         for msg in window:
             addr = "/"+window_name+"/"+msg
             value = window[msg]
@@ -76,14 +75,14 @@ for i in range(1, len(sys.argv)):
     window_names.append(arg)
 
 for window_name in window_names:
-    window_sates[window_name] = {}
+    window_states[window_name] = {}
     games_mmf[window_name] = mmap.mmap(-1, MMF_SIZE, window_name + "_in")
     emulator_input[window_name] = {}
 
 c = 0
 while True:
     # read game state from file
-    for window_name in window_sates:
+    for window_name in window_states:
         with mmap.mmap(-1, MMF_SIZE, window_name+"_state", mmap.ACCESS_READ) as mm:
             try:
                 b = mm.read(MMF_SIZE)
@@ -91,7 +90,7 @@ while True:
                 if len(s) == 0:
                     continue
                 state = json.loads(s)
-                window_sates[window_name] = state
+                window_states[window_name] = state
             except:
                 print("something went wrong...")
 
