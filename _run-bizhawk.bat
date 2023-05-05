@@ -1,1 +1,0 @@
-..\BizHawk-src\output\EmuHawk.exe --config=config2.ini

@@ -1,5 +1,5 @@
-local lib = require("./lib")
-local plunder = require("./plunderlib")
+local lib = require("./lib/lib")
+local plunder = require("./lib/plunder")
 
 plunder.USE_SERVER = true
 plunder.USE_SERVER_INPUT = true
@@ -16,7 +16,6 @@ instance = 0
 function main()
 	print("starting lua stuff")
 	-- loop forever waiting for clients
-	currentGame = "none"
 	print("rom: ", gameinfo.getromname())
 	domainToCheck = "RDRAM"
 	MARIO_LEVEL_CASTLE_LOBBY = 6
@@ -39,7 +38,6 @@ function main()
 		local sample = split[1]
 		windowName = split[2] or game
 		if #split > 1 then instance = tonumber(split[2]) end
-		-- currentGame = name -- TODO: maybe add info to game's name
 		print("systemid: "..emu.getsystemid())
 		print("sample: "..sample)
 		print("windowName: "..windowName)
@@ -50,7 +48,12 @@ function main()
 		gui.clearGraphics()
 		plunder.getServerInput(windowName)
 
-		emu.frameadvance()
+		if client.ispaused then
+			emu.yield()
+		else
+			emu.frameadvance()
+		end
+
 	-- end
 	-- while true do
 
@@ -61,42 +64,23 @@ function main()
 			frameTimer = 0
 		end
 
-		local newMem = plunder.readMemory(currentGame)
+		local newMem = plunder.readMemory()
+
+
+		plunder.sendServerState(windowName, instance, newMem)
+
 		-- build log and send to server
 		-- local dbg = ""
 		-- for i, key in ipairs(lib.get_keys(newMem)) do
-		-- 	local msg = currentGame.."/"..key..":"..value
+		-- 	local msg = key..":"..value
 		-- 	if mem[key]["curr"] ~= value then
 		-- 		mem[key]["curr"] = math.abs(value) < 0.001 and 0 or value
-		-- 		-- plunder.sendServerMessage(msg)
 		-- 	end
 		-- 	dbg = dbg..msg.."\n"
 		-- end
 
-		plunder.sendServerState(windowName, instance, newMem)
-
 		if SHOW_DEBUG then
 			gui.text(10, 10, dbg)
-		end
-
-		if currentGame == "mario" then
-			local joypad = joypad.get(1)
-			if joypad["A"] then
-				-- savestate.saveslot(1)
-				-- setGame("zelda")
-				frameTimer = 0
-			end
-
-			if frameTimer > 60 then
-				-- savestate.saveslot(1)
-				plunder.setGame("zelda")
-				frameTimer = 0
-			end
-		elseif currentGame == "zelda" then
-			if frameTimer > 60 then
-				plunder.setGame("mario")
-				frameTimer = 0
-			end
 		end
 	end
 end

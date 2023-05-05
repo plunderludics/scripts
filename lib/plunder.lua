@@ -165,8 +165,8 @@ function plunder.sendServerState(game, instance, state)
 	comm.mmfWrite(windowName..ext.."_state", s)
 end
 
-function plunder.readMemory(game)
-	game = game or currentGame
+function plunder.readMemory()
+	local game = currentGame
 	local newMem = {}
 
 	local addresses = plunder.MEM[game]

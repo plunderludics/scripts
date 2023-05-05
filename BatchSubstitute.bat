@@ -1,3 +1,5 @@
+:: useful for batch replacing things in the ini files
+
 @echo off
 REM -- Prepare the Command Processor --
 SETLOCAL ENABLEEXTENSIONS

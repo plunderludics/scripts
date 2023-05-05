@@ -37,16 +37,4 @@ function lib.lines_from(file)
   return lines
 end
 
-function lib.lerp(a, b, v)
-  return a + (b-a) * v
-end
-
-function lib.inverselerp(a, b, v)
-  return (v-a) / (b-a)
-end
-
-function lib.remap(a, b, x, y, v)
-  return lib.inverselerp(x, y, lerp(a, b, v))
-end
-
 return lib

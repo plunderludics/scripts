@@ -19,6 +19,9 @@ games_mmf  = {}
 gamelist = ["mario", "zelda", "mario-2"]
 
 def main():
+    # TODO: REPLACE CODE HERE TO INTERACT BETWEEN MULTIPLE GAMES
+    # what this one is doing is checking if the speed in a game named zelda (when running from)
+
     if game_states["zelda"].get("velY", 0) > 0:
         emulator_input["mario-2"]["a"] = False
         emulator_input["mario"]["a"] = True

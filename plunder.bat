@@ -1,0 +1,1 @@
+%PLUNDER_HOME%\Bizhawk\output\EmuHawk.exe --url_get=http://127.0.0.1:9876/%1_%2 --windowtitle=%2 --lua="%PLUNDER_HOME%\scripts\track.lua"

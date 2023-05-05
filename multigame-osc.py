@@ -4,6 +4,7 @@ import mmap
 import sys
 import json
 import threading
+import time
 
 from pythonosc import udp_client
 from pythonosc.dispatcher import Dispatcher
@@ -32,12 +33,22 @@ emulator_input = {}
 
 window_states = {}
 
-games_mmf  = {}
+emulators_mmf  = {}
 
 # get arguments passed in command line
 window_names = []
 
 print("Creating OSC server")
+def write_emu_input(game):
+    mm = emulators_mmf[game]
+    i = json.dumps(emulator_input[game])
+    b = bytes(i, "utf-8")
+    mm.seek(0)
+    # mm.write(bytes([b"\x00"]*(MMF_SIZE)))
+    # mm.seek(0)
+    mm.write(b)
+    mm.flush()
+
 def emu_handler(address, *args):
     sub = address.split('/')
     game = sub[2]
@@ -45,6 +56,9 @@ def emu_handler(address, *args):
     value = args[0]
     print("OSC received: ", address, " | setting ", game, "-", state, "to ", value)
     emulator_input[game][state] = value
+    # write emulator input to file
+    write_emu_input(game)
+
 
 dispatcher = Dispatcher()
 dispatcher.map("/emu/*", emu_handler)
@@ -65,6 +79,7 @@ def main():
         for msg in window:
             addr = "/"+window_name+"/"+msg
             value = window[msg]
+            #print(addr+" : "+str(value))
             for osc in osc_clients:
                 osc.send_message(addr, value)
 
@@ -76,39 +91,40 @@ for i in range(1, len(sys.argv)):
 
 for window_name in window_names:
     window_states[window_name] = {}
-    games_mmf[window_name] = mmap.mmap(-1, MMF_SIZE, window_name + "_in")
+    emulators_mmf[window_name] = mmap.mmap(-1, MMF_SIZE, window_name + "_in")
     emulator_input[window_name] = {}
 
 c = 0
-while True:
-    # read game state from file
-    for window_name in window_states:
-        with mmap.mmap(-1, MMF_SIZE, window_name+"_state", mmap.ACCESS_READ) as mm:
-            try:
-                b = mm.read(MMF_SIZE)
-                s = b.decode("utf-8").replace("\x00", "").strip()
-                if len(s) == 0:
-                    continue
-                state = json.loads(s)
-                window_states[window_name] = state
-            except:
-                print("something went wrong...")
+for game in emulator_input:
+    write_emu_input(game)
 
-    main()
+try:
+    while True:
+        # read game state from file
+        # TODO: pull more smart
+        start = time.time()
+        for window_name in window_states:
+            with mmap.mmap(-1, MMF_SIZE, window_name+"_state", mmap.ACCESS_READ) as mm:
+                try:
+                    b = mm.read(MMF_SIZE)
+                    s = b.decode("utf-8").replace("\x00", "").strip()
+                    if len(s) == 0:
+                        continue
+                    state = json.loads(s)
+                    window_states[window_name] = state
+                except:
+                    print("something went wrong...")
 
+        main()
 
-    # write emulator input to file
-    for window_name in emulator_input:
-            # write emulator input to file
-            mm = games_mmf[window_name]
-            i = json.dumps(emulator_input[window_name])
-            b = bytes(i, "utf-8")
+        end = time.time()
+        period = 1/30
+        wait = end - start -period
+        if wait > 0:
+            time.sleep(wait)
 
-            mm.seek(0)
-            #mm.write(bytes([b"\x00"]*MMF_SIZE))
-            #mm.seek(0)
-            mm.write(b)
-            mm.flush()
-
-print("Closing resources")
-mm.close()
+except:
+    print("Closing resources...")
+    mm.close()
+    for mmf in emulators_mmf:
+        emulators_mmf.close()

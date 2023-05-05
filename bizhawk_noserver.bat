@@ -1,1 +1,0 @@
-%PLUNDER_HOME%\Bizhawk\output\EmuHawk.exe --url_get=http://127.0.0.1:9876/%1-%2 --windowtitle=%2 %PLUNDER_HOME%\roms\mario.n64 --lua="%PLUNDER_HOME%\scripts\plunder.lua"
